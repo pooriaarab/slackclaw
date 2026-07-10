@@ -40,3 +40,11 @@ export interface Message {
   source: MessageSource;
   capturedAt: string;
 }
+
+export interface SavedItem {
+  id?: number;
+  workspaceId: number;
+  messageId: number;
+  savedAt: string;
+  note: string | null;
+}
