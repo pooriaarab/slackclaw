@@ -7,10 +7,14 @@ export interface LocateEnv {
   home: string;
 }
 
+// Slack's message/channel/member state lives in the IndexedDB *blob* dir, not
+// the leveldb itself -- Chromium externalizes large IndexedDB values (Slack's
+// redux-persist state is several MB) to standalone blob files on disk, so no
+// leveldb parsing is needed to reach them.
 const CANDIDATE_SUBPATHS: Record<string, string[]> = {
-  darwin: ["Library/Application Support/Slack/IndexedDB/https_app.slack.com_0.indexeddb.leveldb"],
-  linux: [".config/Slack/IndexedDB/https_app.slack.com_0.indexeddb.leveldb"],
-  win32: ["AppData/Roaming/Slack/IndexedDB/https_app.slack.com_0.indexeddb.leveldb"],
+  darwin: ["Library/Application Support/Slack/IndexedDB/https_app.slack.com_0.indexeddb.blob"],
+  linux: [".config/Slack/IndexedDB/https_app.slack.com_0.indexeddb.blob"],
+  win32: ["AppData/Roaming/Slack/IndexedDB/https_app.slack.com_0.indexeddb.blob"],
 };
 
 export function locateSlackCacheDir(e: LocateEnv = { platform: process.platform, home: process.env.HOME ?? "" }): string | null {
