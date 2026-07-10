@@ -1,5 +1,5 @@
 import type Database from "better-sqlite3";
-import type { Channel, Message, SlackUser, Workspace } from "../types.js";
+import type { Channel, Message, SavedItem, SlackUser, Workspace } from "../types.js";
 
 const SOURCE_RANK: Record<Message["source"], number> = { cache: 0, self: 1, bot: 2 };
 
@@ -74,6 +74,20 @@ export class Repo {
            edited_ts=excluded.edited_ts, source=excluded.source, captured_at=excluded.captured_at`
       )
       .run(m);
+  }
+
+  /** Upserts by message_id -- the schema has no UNIQUE constraint on
+   * saved_items (a message is saved at most once in practice), so dedup is
+   * done here rather than via ON CONFLICT. */
+  upsertSavedItem(s: SavedItem): void {
+    const existing = this.db.prepare("SELECT id FROM saved_items WHERE message_id = ?").get(s.messageId) as any;
+    if (existing) {
+      this.db.prepare("UPDATE saved_items SET saved_at = ?, note = ? WHERE id = ?").run(s.savedAt, s.note, existing.id);
+      return;
+    }
+    this.db
+      .prepare("INSERT INTO saved_items (workspace_id, message_id, saved_at, note) VALUES (?, ?, ?, ?)")
+      .run(s.workspaceId, s.messageId, s.savedAt, s.note);
   }
 
   searchMessages(query: string, limit = 50): Message[] {
