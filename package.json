@@ -1,0 +1,27 @@
+{
+  "name": "slackclaw",
+  "version": "0.1.0",
+  "description": "Slack DMs and saved-items scraper. Local archive of your Slack messages claw-able for agents.",
+  "type": "module",
+  "bin": {
+    "slackclaw": "./dist/cli/index.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "dev": "tsx src/cli/index.ts"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.3.0",
+    "commander": "^12.1.0",
+    "snappyjs": "^0.7.0"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
+    "@types/node": "^22.5.0",
+    "@types/snappyjs": "^0.7.1",
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
