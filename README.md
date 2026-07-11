@@ -78,6 +78,8 @@ Slack Desktop is an Electron app, and its local state (channels, members, messag
 
 `slackclaw` follows the architecture of [`discrawl`](https://github.com/openclaw/discrawl) (Discord to SQLite) applied to Slack. The V8-deserialization step needs no subprocess at all here, since Node's built-in `v8` module handles it directly when the host tool is already Node.
 
+While building this, I came across [`slacrawl`](https://github.com/openclaw/slacrawl) (MIT), a Go CLI from the same org that does the same job for Slack, and does considerably more of it (MCP sync, analytics, retention, multi-workspace). I didn't know it existed when I started `slackclaw` — worth checking out if you want a more mature, feature-complete tool today.
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](./CONTRIBUTING.md). Only the repo owner merges PRs. Anyone can open one.
