@@ -3,6 +3,43 @@ import type { Channel, Message, SavedItem, SlackUser, Workspace } from "../types
 
 const SOURCE_RANK: Record<Message["source"], number> = { cache: 0, self: 1, bot: 2 };
 
+interface IdRow {
+  id: number;
+}
+
+interface MessageRow {
+  id: number;
+  channel_id: number;
+  slack_ts: string;
+  thread_ts: string | null;
+  user_id: number | null;
+  text: string;
+  edited_ts: string | null;
+  source: Message["source"];
+  captured_at: string;
+}
+
+function requiredId(row: IdRow | undefined): number {
+  if (!row) {
+    throw new Error("expected row with id");
+  }
+  return row.id;
+}
+
+function messageFromRow(row: MessageRow): Message {
+  return {
+    id: row.id,
+    channelId: row.channel_id,
+    slackTs: row.slack_ts,
+    threadTs: row.thread_ts,
+    userId: row.user_id,
+    text: row.text,
+    editedTs: row.edited_ts,
+    source: row.source,
+    capturedAt: row.captured_at,
+  };
+}
+
 export class Repo {
   constructor(private db: Database.Database) {}
 
@@ -13,7 +50,7 @@ export class Repo {
          ON CONFLICT(team_id) DO UPDATE SET name=excluded.name, domain=excluded.domain, is_default=excluded.is_default`
       )
       .run({ ...w, isDefault: w.isDefault ? 1 : 0 });
-    return (this.db.prepare("SELECT id FROM workspaces WHERE team_id = ?").get(w.teamId) as any).id;
+    return requiredId(this.db.prepare("SELECT id FROM workspaces WHERE team_id = ?").get(w.teamId) as IdRow | undefined);
   }
 
   upsertChannel(c: Channel): number {
@@ -23,9 +60,11 @@ export class Repo {
          ON CONFLICT(workspace_id, slack_channel_id) DO UPDATE SET name=excluded.name, type=excluded.type, is_archived=excluded.is_archived`
       )
       .run({ ...c, isArchived: c.isArchived ? 1 : 0 });
-    return (this.db
-      .prepare("SELECT id FROM channels WHERE workspace_id = ? AND slack_channel_id = ?")
-      .get(c.workspaceId, c.slackChannelId) as any).id;
+    return requiredId(
+      this.db
+        .prepare("SELECT id FROM channels WHERE workspace_id = ? AND slack_channel_id = ?")
+        .get(c.workspaceId, c.slackChannelId) as IdRow | undefined
+    );
   }
 
   upsertUser(u: SlackUser): number {
@@ -35,27 +74,19 @@ export class Repo {
          ON CONFLICT(workspace_id, slack_user_id) DO UPDATE SET name=excluded.name, display_name=excluded.display_name, is_bot=excluded.is_bot`
       )
       .run({ ...u, isBot: u.isBot ? 1 : 0 });
-    return (this.db
-      .prepare("SELECT id FROM users WHERE workspace_id = ? AND slack_user_id = ?")
-      .get(u.workspaceId, u.slackUserId) as any).id;
+    return requiredId(
+      this.db
+        .prepare("SELECT id FROM users WHERE workspace_id = ? AND slack_user_id = ?")
+        .get(u.workspaceId, u.slackUserId) as IdRow | undefined
+    );
   }
 
   findMessage(channelId: number, slackTs: string): Message | undefined {
     const row = this.db
       .prepare("SELECT * FROM messages WHERE channel_id = ? AND slack_ts = ?")
-      .get(channelId, slackTs) as any;
+      .get(channelId, slackTs) as MessageRow | undefined;
     if (!row) return undefined;
-    return {
-      id: row.id,
-      channelId: row.channel_id,
-      slackTs: row.slack_ts,
-      threadTs: row.thread_ts,
-      userId: row.user_id,
-      text: row.text,
-      editedTs: row.edited_ts,
-      source: row.source,
-      capturedAt: row.captured_at,
-    };
+    return messageFromRow(row);
   }
 
   /** Upserts a message. Source priority bot > self > cache: an existing row from
@@ -80,7 +111,7 @@ export class Repo {
    * saved_items (a message is saved at most once in practice), so dedup is
    * done here rather than via ON CONFLICT. */
   upsertSavedItem(s: SavedItem): void {
-    const existing = this.db.prepare("SELECT id FROM saved_items WHERE message_id = ?").get(s.messageId) as any;
+    const existing = this.db.prepare("SELECT id FROM saved_items WHERE message_id = ?").get(s.messageId) as IdRow | undefined;
     if (existing) {
       this.db.prepare("UPDATE saved_items SET saved_at = ?, note = ? WHERE id = ?").run(s.savedAt, s.note, existing.id);
       return;
@@ -96,17 +127,7 @@ export class Repo {
         `SELECT m.* FROM messages_fts f JOIN messages m ON m.id = f.rowid
          WHERE f.text MATCH ? ORDER BY rank LIMIT ?`
       )
-      .all(query, limit) as any[];
-    return rows.map((row) => ({
-      id: row.id,
-      channelId: row.channel_id,
-      slackTs: row.slack_ts,
-      threadTs: row.thread_ts,
-      userId: row.user_id,
-      text: row.text,
-      editedTs: row.edited_ts,
-      source: row.source,
-      capturedAt: row.captured_at,
-    }));
+      .all(query, limit) as MessageRow[];
+    return rows.map(messageFromRow);
   }
 }
