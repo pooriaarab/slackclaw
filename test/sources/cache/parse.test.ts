@@ -57,3 +57,31 @@ describe("parseReduxStates (integration, real machine)", () => {
     expect(result.messages.length).toBeGreaterThan(0);
   });
 });
+
+describe("parseReduxStates (saved item timestamps)", () => {
+  const savedState = (dateCreated: unknown) => ({
+    saved: { list: [{ itemType: "message", ts: "1.1", itemId: "C1", dateCreated }] },
+    channels: {},
+  });
+
+  it("parses a saved item whose dateCreated is epoch seconds", () => {
+    const result = parseReduxStates([{ blobPath: "fixture", value: savedState(1735689600) }]);
+
+    expect(result.savedItems.length).toBe(1);
+    expect(result.savedItems[0].savedAt).toBe("2025-01-01T00:00:00.000Z");
+    expect(result.skipped).toBe(0);
+  });
+
+  it.each([
+    ["missing", undefined],
+    ["not a number", "1735689600"],
+    ["NaN", Number.NaN],
+    ["infinite", Number.POSITIVE_INFINITY],
+    ["out of Date range", 8.64e15],
+  ])("skips a saved item whose dateCreated is %s", (_label, dateCreated) => {
+    const result = parseReduxStates([{ blobPath: "fixture", value: savedState(dateCreated) }]);
+
+    expect(result.savedItems).toEqual([]);
+    expect(result.skipped).toBe(1);
+  });
+});

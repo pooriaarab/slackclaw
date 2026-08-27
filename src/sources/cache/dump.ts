@@ -14,7 +14,7 @@ const V8_HEADER = Buffer.from([0xff, 0x0f]);
 
 export interface DecodedReduxState {
   blobPath: string;
-  value: any;
+  value: Record<string, unknown>;
 }
 
 export interface DumpResult {
@@ -26,7 +26,10 @@ function listBlobFiles(blobRoot: string): string[] {
   const files: string[] = [];
   const stack = [blobRoot];
   while (stack.length > 0) {
-    const dir = stack.pop()!;
+    const dir = stack.pop();
+    if (dir === undefined) {
+      throw new Error("blob walk stack unexpectedly empty");
+    }
     for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
       const full = path.join(dir, entry.name);
       if (entry.isDirectory()) stack.push(full);
@@ -36,7 +39,13 @@ function listBlobFiles(blobRoot: string): string[] {
   return files.sort();
 }
 
-function decodeBlob(blobPath: string): any | null {
+function isPlausibleReduxState(value: unknown): value is Record<string, unknown> {
+  if (!value || typeof value !== "object") return false;
+  const record = value as Record<string, unknown>;
+  return Boolean(record.channels || record.members || record.messages);
+}
+
+function decodeBlob(blobPath: string): unknown {
   const raw = fs.readFileSync(blobPath);
   let decoded: Buffer = raw;
   if (raw.subarray(0, 3).equals(SNAPPY_HEADER)) {
@@ -61,7 +70,7 @@ export function dumpCache(blobDir: string): DumpResult {
   for (const blobPath of listBlobFiles(blobDir)) {
     try {
       const value = decodeBlob(blobPath);
-      if (value && typeof value === "object" && (value.channels || value.members || value.messages)) {
+      if (isPlausibleReduxState(value)) {
         states.push({ blobPath, value });
       } else {
         skipped++;
