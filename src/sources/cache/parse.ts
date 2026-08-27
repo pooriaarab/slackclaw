@@ -73,7 +73,7 @@ interface RawSavedItem {
   itemType?: unknown;
   itemId?: string;
   ts?: unknown;
-  dateCreated: number;
+  dateCreated?: unknown;
   todoState?: string | null;
 }
 
@@ -192,16 +192,26 @@ function parseMessages(value: RawReduxState, acc: ParseAcc): void {
   }
 }
 
+/** Slack stores saved-item timestamps as epoch seconds. Returns null for
+ * anything Date cannot represent, so one bad record is skipped rather than
+ * aborting the whole parse with a RangeError. */
+function savedAtOf(dateCreated: unknown): string | null {
+  if (typeof dateCreated !== "number" || !Number.isFinite(dateCreated)) return null;
+  const date = new Date(dateCreated * 1000);
+  return Number.isNaN(date.getTime()) ? null : date.toISOString();
+}
+
 function parseSavedItems(value: RawReduxState, acc: ParseAcc): void {
   for (const raw of value.saved?.list ?? []) {
-    if (raw.itemType !== "message" || !raw.itemId || !raw.ts) {
+    const savedAt = savedAtOf(raw.dateCreated);
+    if (raw.itemType !== "message" || !raw.itemId || !raw.ts || savedAt === null) {
       acc.skipped++;
       continue;
     }
     acc.savedItems.push({
       channelSlackId: raw.itemId,
       slackTs: String(raw.ts),
-      savedAt: new Date(raw.dateCreated * 1000).toISOString(),
+      savedAt,
       note: raw.todoState ?? null,
     });
   }
