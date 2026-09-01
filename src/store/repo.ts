@@ -47,23 +47,27 @@ export class Repo {
     this.db
       .prepare(
         `INSERT INTO workspaces (team_id, name, domain, is_default) VALUES (@teamId, @name, @domain, @isDefault)
-         ON CONFLICT(team_id) DO UPDATE SET name=excluded.name, domain=excluded.domain, is_default=excluded.is_default`
+         ON CONFLICT(team_id) DO UPDATE SET name=excluded.name, domain=excluded.domain, is_default=excluded.is_default`,
       )
       .run({ ...w, isDefault: w.isDefault ? 1 : 0 });
-    return requiredId(this.db.prepare("SELECT id FROM workspaces WHERE team_id = ?").get(w.teamId) as IdRow | undefined);
+    return requiredId(
+      this.db.prepare("SELECT id FROM workspaces WHERE team_id = ?").get(w.teamId) as
+        | IdRow
+        | undefined,
+    );
   }
 
   upsertChannel(c: Channel): number {
     this.db
       .prepare(
         `INSERT INTO channels (workspace_id, slack_channel_id, name, type, is_archived) VALUES (@workspaceId, @slackChannelId, @name, @type, @isArchived)
-         ON CONFLICT(workspace_id, slack_channel_id) DO UPDATE SET name=excluded.name, type=excluded.type, is_archived=excluded.is_archived`
+         ON CONFLICT(workspace_id, slack_channel_id) DO UPDATE SET name=excluded.name, type=excluded.type, is_archived=excluded.is_archived`,
       )
       .run({ ...c, isArchived: c.isArchived ? 1 : 0 });
     return requiredId(
       this.db
         .prepare("SELECT id FROM channels WHERE workspace_id = ? AND slack_channel_id = ?")
-        .get(c.workspaceId, c.slackChannelId) as IdRow | undefined
+        .get(c.workspaceId, c.slackChannelId) as IdRow | undefined,
     );
   }
 
@@ -71,13 +75,13 @@ export class Repo {
     this.db
       .prepare(
         `INSERT INTO users (workspace_id, slack_user_id, name, display_name, is_bot) VALUES (@workspaceId, @slackUserId, @name, @displayName, @isBot)
-         ON CONFLICT(workspace_id, slack_user_id) DO UPDATE SET name=excluded.name, display_name=excluded.display_name, is_bot=excluded.is_bot`
+         ON CONFLICT(workspace_id, slack_user_id) DO UPDATE SET name=excluded.name, display_name=excluded.display_name, is_bot=excluded.is_bot`,
       )
       .run({ ...u, isBot: u.isBot ? 1 : 0 });
     return requiredId(
       this.db
         .prepare("SELECT id FROM users WHERE workspace_id = ? AND slack_user_id = ?")
-        .get(u.workspaceId, u.slackUserId) as IdRow | undefined
+        .get(u.workspaceId, u.slackUserId) as IdRow | undefined,
     );
   }
 
@@ -102,7 +106,7 @@ export class Repo {
          VALUES (@channelId, @slackTs, @threadTs, @userId, @text, @editedTs, @source, @capturedAt)
          ON CONFLICT(channel_id, slack_ts) DO UPDATE SET
            thread_ts=excluded.thread_ts, user_id=excluded.user_id, text=excluded.text,
-           edited_ts=excluded.edited_ts, source=excluded.source, captured_at=excluded.captured_at`
+           edited_ts=excluded.edited_ts, source=excluded.source, captured_at=excluded.captured_at`,
       )
       .run(m);
   }
@@ -111,13 +115,19 @@ export class Repo {
    * saved_items (a message is saved at most once in practice), so dedup is
    * done here rather than via ON CONFLICT. */
   upsertSavedItem(s: SavedItem): void {
-    const existing = this.db.prepare("SELECT id FROM saved_items WHERE message_id = ?").get(s.messageId) as IdRow | undefined;
+    const existing = this.db
+      .prepare("SELECT id FROM saved_items WHERE message_id = ?")
+      .get(s.messageId) as IdRow | undefined;
     if (existing) {
-      this.db.prepare("UPDATE saved_items SET saved_at = ?, note = ? WHERE id = ?").run(s.savedAt, s.note, existing.id);
+      this.db
+        .prepare("UPDATE saved_items SET saved_at = ?, note = ? WHERE id = ?")
+        .run(s.savedAt, s.note, existing.id);
       return;
     }
     this.db
-      .prepare("INSERT INTO saved_items (workspace_id, message_id, saved_at, note) VALUES (?, ?, ?, ?)")
+      .prepare(
+        "INSERT INTO saved_items (workspace_id, message_id, saved_at, note) VALUES (?, ?, ?, ?)",
+      )
       .run(s.workspaceId, s.messageId, s.savedAt, s.note);
   }
 
@@ -125,7 +135,7 @@ export class Repo {
     const rows = this.db
       .prepare(
         `SELECT m.* FROM messages_fts f JOIN messages m ON m.id = f.rowid
-         WHERE f.text MATCH ? ORDER BY rank LIMIT ?`
+         WHERE f.text MATCH ? ORDER BY rank LIMIT ?`,
       )
       .all(query, limit) as MessageRow[];
     return rows.map(messageFromRow);

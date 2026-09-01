@@ -27,6 +27,6 @@ export async function runSync(opts: { source: string; full?: boolean }): Promise
 
   console.log(
     `cache sync: ${summary.channels} channels, ${summary.users} users, ${summary.messages} messages, ` +
-      `${summary.savedItems} saved items upserted, ${summary.skipped + dump.skipped} records skipped`
+      `${summary.savedItems} saved items upserted, ${summary.skipped + dump.skipped} records skipped`,
   );
 }
