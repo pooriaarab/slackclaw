@@ -118,7 +118,12 @@ function looksLikeMessage(entry: RawMessage | null | undefined): boolean {
 }
 
 function workspaceTeamId(value: RawReduxState): string | null {
-  return value.selfTeamIds?.defaultWorkspaceId || value.selfTeamIds?.teamId || value.bootData?.team_id || null;
+  return (
+    value.selfTeamIds?.defaultWorkspaceId ||
+    value.selfTeamIds?.teamId ||
+    value.bootData?.team_id ||
+    null
+  );
 }
 
 function parseChannels(value: RawReduxState, acc: ParseAcc): void {
@@ -176,7 +181,11 @@ function toParsedMessage(channelId: string, entry: RawMessage): ParsedMessage {
   };
 }
 
-function parseChannelMessages(channelId: string, byTs: Record<string, RawMessage> | undefined, acc: ParseAcc): void {
+function parseChannelMessages(
+  channelId: string,
+  byTs: Record<string, RawMessage> | undefined,
+  acc: ParseAcc,
+): void {
   for (const entry of Object.values(byTs ?? {})) {
     if (!looksLikeMessage(entry)) {
       acc.skipped++;

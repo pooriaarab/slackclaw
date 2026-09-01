@@ -10,7 +10,13 @@ const SYNTHETIC_STATE = {
     D1: { id: "D1", is_im: true, is_archived: false },
   },
   members: {
-    U1: { id: "U1", name: "alice", real_name: "Alice", profile: { display_name: "Alice" }, is_bot: false },
+    U1: {
+      id: "U1",
+      name: "alice",
+      real_name: "Alice",
+      profile: { display_name: "Alice" },
+      is_bot: false,
+    },
   },
   messages: {
     C1: {
@@ -20,7 +26,9 @@ const SYNTHETIC_STATE = {
     },
   },
   saved: {
-    list: [{ itemType: "message", ts: "1.1", itemId: "C1", dateCreated: 1735689600, todoState: "saved" }],
+    list: [
+      { itemType: "message", ts: "1.1", itemId: "C1", dateCreated: 1735689600, todoState: "saved" },
+    ],
   },
 };
 

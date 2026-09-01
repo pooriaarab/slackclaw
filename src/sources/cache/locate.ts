@@ -17,7 +17,9 @@ const CANDIDATE_SUBPATHS: Record<string, string[]> = {
   win32: ["AppData/Roaming/Slack/IndexedDB/https_app.slack.com_0.indexeddb.blob"],
 };
 
-export function locateSlackCacheDir(e: LocateEnv = { platform: process.platform, home: process.env.HOME ?? "" }): string | null {
+export function locateSlackCacheDir(
+  e: LocateEnv = { platform: process.platform, home: process.env.HOME ?? "" },
+): string | null {
   const candidates = CANDIDATE_SUBPATHS[e.platform] ?? [];
   for (const sub of candidates) {
     const full = path.join(e.home, sub);

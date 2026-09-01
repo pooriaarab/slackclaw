@@ -26,5 +26,7 @@ export function printDoctorReport(r: DoctorReport, json: boolean): void {
     return;
   }
   console.log(`cache dir found: ${r.cacheDirFound ? "yes -> " + r.cacheDirPath : "no"}`);
-  console.log(`database: ${r.dbExists ? "exists at " + r.dbPath : "not yet created (" + r.dbPath + ")"}`);
+  console.log(
+    `database: ${r.dbExists ? "exists at " + r.dbPath : "not yet created (" + r.dbPath + ")"}`,
+  );
 }
