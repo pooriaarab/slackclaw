@@ -13,6 +13,14 @@
     "**/.next/**",
     "**/.wrangler/**",
     "**/.open-next/**",
-    "**/coverage/**"
+    "**/coverage/**",
+    "**/*.html",
+    "**/*.md",
+    "**/*.mdx",
+    "**/*.json",
+    "**/*.jsonc",
+    "**/*.yml",
+    "**/*.yaml",
+    "**/*.css"
   ]
 }
