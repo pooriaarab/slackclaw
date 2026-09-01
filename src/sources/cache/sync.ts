@@ -1,5 +1,11 @@
 import type { Repo } from "../../store/repo.js";
-import type { ParseResult, ParsedChannel, ParsedMessage, ParsedSavedItem, ParsedUser } from "./parse.js";
+import type {
+  ParseResult,
+  ParsedChannel,
+  ParsedMessage,
+  ParsedSavedItem,
+  ParsedUser,
+} from "./parse.js";
 
 export interface SyncSummary {
   channels: number;
@@ -16,7 +22,11 @@ interface SyncIds {
   users: Map<string, number>;
 }
 
-function syncChannels(repo: Repo, workspaceId: number, channels: ParsedChannel[]): Map<string, number> {
+function syncChannels(
+  repo: Repo,
+  workspaceId: number,
+  channels: ParsedChannel[],
+): Map<string, number> {
   const channelIdBySlackId = new Map<string, number>();
   for (const c of channels) {
     const id = repo.upsertChannel({
@@ -64,7 +74,7 @@ function syncMessages(ids: SyncIds, messages: ParsedMessage[]): number {
       });
       ids.channels.set(m.channelSlackId, channelId);
     }
-    const userId = m.userSlackId ? ids.users.get(m.userSlackId) ?? null : null;
+    const userId = m.userSlackId ? (ids.users.get(m.userSlackId) ?? null) : null;
     ids.repo.upsertMessage({
       channelId,
       userId,
@@ -87,7 +97,12 @@ function syncSavedItems(ids: SyncIds, savedItems: ParsedSavedItem[]): number {
     if (channelId === undefined) continue;
     const message = ids.repo.findMessage(channelId, s.slackTs);
     if (message?.id === undefined) continue;
-    ids.repo.upsertSavedItem({ workspaceId: ids.workspaceId, messageId: message.id, savedAt: s.savedAt, note: s.note });
+    ids.repo.upsertSavedItem({
+      workspaceId: ids.workspaceId,
+      messageId: message.id,
+      savedAt: s.savedAt,
+      note: s.note,
+    });
     savedItemsUpserted++;
   }
   return savedItemsUpserted;

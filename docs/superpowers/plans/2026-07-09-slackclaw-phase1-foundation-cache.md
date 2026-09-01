@@ -59,6 +59,7 @@ slackclaw/
 ### Task 1: Project scaffold
 
 **Files:**
+
 - Create: `package.json`
 - Create: `tsconfig.json`
 - Create: `.gitignore`
@@ -138,6 +139,7 @@ git commit -m "chore: project scaffold (TS, better-sqlite3, classic-level, comma
 ### Task 2: Config + paths
 
 **Files:**
+
 - Create: `src/config/paths.ts`
 - Create: `src/config/config.ts`
 - Test: `test/config/paths.test.ts`
@@ -156,7 +158,11 @@ describe("paths", () => {
   });
 
   it("respects XDG_CONFIG_HOME on linux", () => {
-    const dir = getConfigDir({ platform: "linux", env: { XDG_CONFIG_HOME: "/home/test/.config" }, home: "/home/test" });
+    const dir = getConfigDir({
+      platform: "linux",
+      env: { XDG_CONFIG_HOME: "/home/test/.config" },
+      home: "/home/test",
+    });
     expect(dir).toBe("/home/test/.config/slackclaw");
   });
 
@@ -253,6 +259,7 @@ git commit -m "feat: config + XDG/macOS path resolution"
 ### Task 3: SQLite schema + db module
 
 **Files:**
+
 - Create: `src/store/schema.sql`
 - Create: `src/store/db.ts`
 - Create: `src/types.ts`
@@ -452,7 +459,16 @@ describe("schema", () => {
       .prepare("SELECT name FROM sqlite_master WHERE type='table'")
       .all()
       .map((r: any) => r.name);
-    for (const t of ["workspaces", "channels", "users", "messages", "attachments", "mentions", "saved_items", "sync_state"]) {
+    for (const t of [
+      "workspaces",
+      "channels",
+      "users",
+      "messages",
+      "attachments",
+      "mentions",
+      "saved_items",
+      "sync_state",
+    ]) {
       expect(tables).toContain(t);
     }
     db.close();
@@ -461,10 +477,18 @@ describe("schema", () => {
   it("enforces unique (channel_id, slack_ts) on messages", () => {
     const db = openDb(dbPath);
     db.prepare("INSERT INTO workspaces (team_id, name) VALUES ('T1','Test')").run();
-    db.prepare("INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')").run();
-    db.prepare("INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','hi','cache','2026-01-01')").run();
+    db.prepare(
+      "INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')",
+    ).run();
+    db.prepare(
+      "INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','hi','cache','2026-01-01')",
+    ).run();
     expect(() =>
-      db.prepare("INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','dup','cache','2026-01-01')").run()
+      db
+        .prepare(
+          "INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','dup','cache','2026-01-01')",
+        )
+        .run(),
     ).toThrow();
     db.close();
   });
@@ -472,9 +496,15 @@ describe("schema", () => {
   it("keeps messages_fts in sync via triggers", () => {
     const db = openDb(dbPath);
     db.prepare("INSERT INTO workspaces (team_id, name) VALUES ('T1','Test')").run();
-    db.prepare("INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')").run();
-    db.prepare("INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'1','panic: nil pointer','cache','2026-01-01')").run();
-    const rows = db.prepare("SELECT rowid FROM messages_fts WHERE messages_fts MATCH 'panic'").all();
+    db.prepare(
+      "INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')",
+    ).run();
+    db.prepare(
+      "INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'1','panic: nil pointer','cache','2026-01-01')",
+    ).run();
+    const rows = db
+      .prepare("SELECT rowid FROM messages_fts WHERE messages_fts MATCH 'panic'")
+      .all();
     expect(rows.length).toBe(1);
     db.close();
   });
@@ -498,6 +528,7 @@ git commit -m "feat: SQLite schema with FTS5 search + trigger sync"
 ### Task 4: Repo layer (typed upsert/query helpers)
 
 **Files:**
+
 - Create: `src/store/repo.ts`
 - Test: `test/store/repo.test.ts`
 
@@ -527,32 +558,95 @@ describe("Repo", () => {
 
   it("upserts a workspace idempotently", () => {
     const id1 = repo.upsertWorkspace({ teamId: "T1", name: "Test", domain: null, isDefault: true });
-    const id2 = repo.upsertWorkspace({ teamId: "T1", name: "Test Renamed", domain: null, isDefault: true });
+    const id2 = repo.upsertWorkspace({
+      teamId: "T1",
+      name: "Test Renamed",
+      domain: null,
+      isDefault: true,
+    });
     expect(id1).toBe(id2);
   });
 
   it("upsertMessage respects source priority: bot > self > cache", () => {
-    const wsId = repo.upsertWorkspace({ teamId: "T1", name: "Test", domain: null, isDefault: true });
-    const chId = repo.upsertChannel({ workspaceId: wsId, slackChannelId: "C1", name: "general", type: "public", isArchived: false });
+    const wsId = repo.upsertWorkspace({
+      teamId: "T1",
+      name: "Test",
+      domain: null,
+      isDefault: true,
+    });
+    const chId = repo.upsertChannel({
+      workspaceId: wsId,
+      slackChannelId: "C1",
+      name: "general",
+      type: "public",
+      isArchived: false,
+    });
 
-    repo.upsertMessage({ channelId: chId, slackTs: "100.1", threadTs: null, userId: null, text: "from cache", editedTs: null, source: "cache", capturedAt: "2026-01-01" });
-    repo.upsertMessage({ channelId: chId, slackTs: "100.1", threadTs: null, userId: null, text: "from bot, richer", editedTs: null, source: "bot", capturedAt: "2026-01-02" });
+    repo.upsertMessage({
+      channelId: chId,
+      slackTs: "100.1",
+      threadTs: null,
+      userId: null,
+      text: "from cache",
+      editedTs: null,
+      source: "cache",
+      capturedAt: "2026-01-01",
+    });
+    repo.upsertMessage({
+      channelId: chId,
+      slackTs: "100.1",
+      threadTs: null,
+      userId: null,
+      text: "from bot, richer",
+      editedTs: null,
+      source: "bot",
+      capturedAt: "2026-01-02",
+    });
 
     const msg = repo.findMessage(chId, "100.1");
     expect(msg?.text).toBe("from bot, richer");
     expect(msg?.source).toBe("bot");
 
     // a later cache-only sync must not clobber the bot row
-    repo.upsertMessage({ channelId: chId, slackTs: "100.1", threadTs: null, userId: null, text: "stale cache replay", editedTs: null, source: "cache", capturedAt: "2026-01-03" });
+    repo.upsertMessage({
+      channelId: chId,
+      slackTs: "100.1",
+      threadTs: null,
+      userId: null,
+      text: "stale cache replay",
+      editedTs: null,
+      source: "cache",
+      capturedAt: "2026-01-03",
+    });
     const after = repo.findMessage(chId, "100.1");
     expect(after?.source).toBe("bot");
     expect(after?.text).toBe("from bot, richer");
   });
 
   it("searchMessages finds text via FTS5", () => {
-    const wsId = repo.upsertWorkspace({ teamId: "T1", name: "Test", domain: null, isDefault: true });
-    const chId = repo.upsertChannel({ workspaceId: wsId, slackChannelId: "C1", name: "general", type: "public", isArchived: false });
-    repo.upsertMessage({ channelId: chId, slackTs: "1", threadTs: null, userId: null, text: "the launch checklist is done", editedTs: null, source: "cache", capturedAt: "2026-01-01" });
+    const wsId = repo.upsertWorkspace({
+      teamId: "T1",
+      name: "Test",
+      domain: null,
+      isDefault: true,
+    });
+    const chId = repo.upsertChannel({
+      workspaceId: wsId,
+      slackChannelId: "C1",
+      name: "general",
+      type: "public",
+      isArchived: false,
+    });
+    repo.upsertMessage({
+      channelId: chId,
+      slackTs: "1",
+      threadTs: null,
+      userId: null,
+      text: "the launch checklist is done",
+      editedTs: null,
+      source: "cache",
+      capturedAt: "2026-01-01",
+    });
     const results = repo.searchMessages("checklist");
     expect(results.length).toBe(1);
   });
@@ -580,7 +674,7 @@ export class Repo {
     this.db
       .prepare(
         `INSERT INTO workspaces (team_id, name, domain, is_default) VALUES (@teamId, @name, @domain, @isDefault)
-         ON CONFLICT(team_id) DO UPDATE SET name=excluded.name, domain=excluded.domain, is_default=excluded.is_default`
+         ON CONFLICT(team_id) DO UPDATE SET name=excluded.name, domain=excluded.domain, is_default=excluded.is_default`,
       )
       .run({ ...w, isDefault: w.isDefault ? 1 : 0 });
     return (this.db.prepare("SELECT id FROM workspaces WHERE team_id = ?").get(w.teamId) as any).id;
@@ -590,24 +684,28 @@ export class Repo {
     this.db
       .prepare(
         `INSERT INTO channels (workspace_id, slack_channel_id, name, type, is_archived) VALUES (@workspaceId, @slackChannelId, @name, @type, @isArchived)
-         ON CONFLICT(workspace_id, slack_channel_id) DO UPDATE SET name=excluded.name, type=excluded.type, is_archived=excluded.is_archived`
+         ON CONFLICT(workspace_id, slack_channel_id) DO UPDATE SET name=excluded.name, type=excluded.type, is_archived=excluded.is_archived`,
       )
       .run({ ...c, isArchived: c.isArchived ? 1 : 0 });
-    return (this.db
-      .prepare("SELECT id FROM channels WHERE workspace_id = ? AND slack_channel_id = ?")
-      .get(c.workspaceId, c.slackChannelId) as any).id;
+    return (
+      this.db
+        .prepare("SELECT id FROM channels WHERE workspace_id = ? AND slack_channel_id = ?")
+        .get(c.workspaceId, c.slackChannelId) as any
+    ).id;
   }
 
   upsertUser(u: SlackUser): number {
     this.db
       .prepare(
         `INSERT INTO users (workspace_id, slack_user_id, name, display_name, is_bot) VALUES (@workspaceId, @slackUserId, @name, @displayName, @isBot)
-         ON CONFLICT(workspace_id, slack_user_id) DO UPDATE SET name=excluded.name, display_name=excluded.display_name, is_bot=excluded.is_bot`
+         ON CONFLICT(workspace_id, slack_user_id) DO UPDATE SET name=excluded.name, display_name=excluded.display_name, is_bot=excluded.is_bot`,
       )
       .run({ ...u, isBot: u.isBot ? 1 : 0 });
-    return (this.db
-      .prepare("SELECT id FROM users WHERE workspace_id = ? AND slack_user_id = ?")
-      .get(u.workspaceId, u.slackUserId) as any).id;
+    return (
+      this.db
+        .prepare("SELECT id FROM users WHERE workspace_id = ? AND slack_user_id = ?")
+        .get(u.workspaceId, u.slackUserId) as any
+    ).id;
   }
 
   findMessage(channelId: number, slackTs: string): Message | undefined {
@@ -641,7 +739,7 @@ export class Repo {
          VALUES (@channelId, @slackTs, @threadTs, @userId, @text, @editedTs, @source, @capturedAt)
          ON CONFLICT(channel_id, slack_ts) DO UPDATE SET
            thread_ts=excluded.thread_ts, user_id=excluded.user_id, text=excluded.text,
-           edited_ts=excluded.edited_ts, source=excluded.source, captured_at=excluded.captured_at`
+           edited_ts=excluded.edited_ts, source=excluded.source, captured_at=excluded.captured_at`,
       )
       .run(m);
   }
@@ -650,7 +748,7 @@ export class Repo {
     const rows = this.db
       .prepare(
         `SELECT m.* FROM messages_fts f JOIN messages m ON m.id = f.rowid
-         WHERE f.text MATCH ? ORDER BY rank LIMIT ?`
+         WHERE f.text MATCH ? ORDER BY rank LIMIT ?`,
       )
       .all(query, limit) as any[];
     return rows.map((row) => ({
@@ -687,6 +785,7 @@ git commit -m "feat: repo layer with source-priority upsert + FTS5 search"
 ### Task 5: CLI scaffold — `init` and `doctor`
 
 **Files:**
+
 - Create: `src/cli/index.ts`
 - Create: `src/cli/init.ts`
 - Create: `src/cli/doctor.ts`
@@ -701,7 +800,9 @@ import { locateSlackCacheDir } from "../sources/cache/locate.js";
 export async function runInit(): Promise<void> {
   const cacheDir = locateSlackCacheDir();
   const cfg = loadConfig();
-  console.log(cacheDir ? `Found Slack Desktop cache at: ${cacheDir}` : "No local Slack Desktop cache found.");
+  console.log(
+    cacheDir ? `Found Slack Desktop cache at: ${cacheDir}` : "No local Slack Desktop cache found.",
+  );
   saveConfig(cfg);
   console.log("Config written.");
 }
@@ -739,7 +840,9 @@ export function printDoctorReport(r: DoctorReport, json: boolean): void {
     return;
   }
   console.log(`cache dir found: ${r.cacheDirFound ? "yes -> " + r.cacheDirPath : "no"}`);
-  console.log(`database: ${r.dbExists ? "exists at " + r.dbPath : "not yet created (" + r.dbPath + ")"}`);
+  console.log(
+    `database: ${r.dbExists ? "exists at " + r.dbPath : "not yet created (" + r.dbPath + ")"}`,
+  );
 }
 ```
 
@@ -801,6 +904,7 @@ git commit -m "feat: CLI scaffold (init, doctor, command wiring)"
 ### Task 6: Locate Slack Desktop cache dir + inspect real records
 
 **Files:**
+
 - Create: `src/sources/cache/locate.ts`
 - Test: `test/sources/cache/locate.test.ts`
 
@@ -845,7 +949,9 @@ const CANDIDATE_SUBPATHS: Record<string, string[]> = {
   win32: ["AppData/Roaming/Slack/IndexedDB/https_app.slack.com_0.indexeddb.leveldb"],
 };
 
-export function locateSlackCacheDir(e: LocateEnv = { platform: process.platform, home: process.env.HOME ?? "" }): string | null {
+export function locateSlackCacheDir(
+  e: LocateEnv = { platform: process.platform, home: process.env.HOME ?? "" },
+): string | null {
   const candidates = CANDIDATE_SUBPATHS[e.platform] ?? [];
   for (const sub of candidates) {
     const full = path.join(e.home, sub);
@@ -877,6 +983,7 @@ git commit -m "feat: locate Slack Desktop IndexedDB cache dir per-OS"
 ### Task 7: Python helper — decode IndexedDB records via ccl_chromium_reader
 
 **Files:**
+
 - Create: `src/sources/cache/pyhelper/dump_indexeddb.py`
 - Create: `src/sources/cache/pyhelper/requirements.txt`
 - Create: `src/sources/cache/dump.ts`
@@ -1030,20 +1137,25 @@ describe("dumpCache (integration, real machine)", () => {
   const cacheDir = locateSlackCacheDir();
   const depsOk = pyDepsAvailable();
 
-  it.skipIf(!cacheDir || !depsOk)("dumps at least one record from the real local Slack cache", async () => {
-    const result = await dumpCache(cacheDir!);
-    expect(result.records.length).toBeGreaterThan(0);
-  });
+  it.skipIf(!cacheDir || !depsOk)(
+    "dumps at least one record from the real local Slack cache",
+    async () => {
+      const result = await dumpCache(cacheDir!);
+      expect(result.records.length).toBeGreaterThan(0);
+    },
+  );
 });
 ```
 
 - [ ] **Step 5: Install python deps and run**
 
 Run:
+
 ```bash
 pip install -r src/sources/cache/pyhelper/requirements.txt
 npx vitest run test/sources/cache/dump.test.ts
 ```
+
 Expected: PASS with `records.length > 0` against the real cache found in Task 6 Step 5. If `ccl_chromium_indexeddb` import fails, the test skips cleanly rather than failing CI on machines without the python dep — but for this dev machine, install it and confirm the real pass.
 
 - [ ] **Step 6: Manually inspect a handful of decoded records**
@@ -1071,8 +1183,9 @@ git commit -m "feat: cache dump via bundled ccl_chromium_reader python helper"
 ### Task 8: Cache parser — map decoded records to domain Message/Channel/User
 
 **Files:**
+
 - Create: `src/sources/cache/parse.ts`
-- Create: `test/fixtures/sample-indexeddb-records.json` (sanitized output captured from Task 7 Step 6 — replace real workspace/user/message content with synthetic placeholders before committing, keep the real object-store names and value *shape*)
+- Create: `test/fixtures/sample-indexeddb-records.json` (sanitized output captured from Task 7 Step 6 — replace real workspace/user/message content with synthetic placeholders before committing, keep the real object-store names and value _shape_)
 - Test: `test/sources/cache/parse.test.ts`
 
 **This task's exact field-mapping code depends on Task 7 Step 6's findings and cannot be written in advance without guessing at an undocumented format.** Do not skip Task 7 Step 6 to save time — implementing this task from assumption instead of the observed record shape is exactly the kind of unverified guess that produces a parser silently importing zero real messages.
@@ -1102,7 +1215,9 @@ describe("parseCacheRecords", () => {
   });
 
   it("skips a record it cannot decode instead of throwing", () => {
-    const { messages, skipped } = parseCacheRecords([{ objectStore: "unknown-store", key: "x", value: { garbage: true } }]);
+    const { messages, skipped } = parseCacheRecords([
+      { objectStore: "unknown-store", key: "x", value: { garbage: true } },
+    ]);
     expect(messages.length).toBe(0);
     expect(skipped).toBe(1);
   });
@@ -1142,7 +1257,9 @@ export function parseCacheRecords(records: RawCacheRecord[]): ParseResult {
   return { messages, skipped };
 }
 
-function tryParseMessageRecord(rec: RawCacheRecord): Omit<Message, "id" | "channelId" | "userId"> | null {
+function tryParseMessageRecord(
+  rec: RawCacheRecord,
+): Omit<Message, "id" | "channelId" | "userId"> | null {
   // Fill in against the real object store name(s) and value shape observed
   // in Task 7 Step 6, e.g.:
   // if (rec.objectStore !== "messages") return null;
@@ -1177,6 +1294,7 @@ git commit -m "feat: parse cache-decoded IndexedDB records into domain messages"
 ### Task 9: Wire cache sync into `sync --source cache`
 
 **Files:**
+
 - Create: `src/sources/cache/sync.ts`
 - Create: `src/cli/sync.ts`
 - Test: `test/sources/cache/sync.test.ts`
@@ -1209,7 +1327,14 @@ describe("syncFromCacheRecords", () => {
   it("upserts parsed messages under a default workspace/channel", () => {
     const summary = syncFromCacheRecords(repo, {
       messages: [
-        { slackTs: "1.1", threadTs: null, text: "hello", editedTs: null, source: "cache", capturedAt: "2026-01-01" },
+        {
+          slackTs: "1.1",
+          threadTs: null,
+          text: "hello",
+          editedTs: null,
+          source: "cache",
+          capturedAt: "2026-01-01",
+        },
       ],
       skipped: 0,
     });
@@ -1237,8 +1362,18 @@ export interface SyncSummary {
   skipped: number;
 }
 
-const CACHE_WORKSPACE = { teamId: "local-cache", name: "Local Slack Cache", domain: null, isDefault: true };
-const CACHE_CHANNEL = { slackChannelId: "cache-import", name: "cache-import", type: "im" as const, isArchived: false };
+const CACHE_WORKSPACE = {
+  teamId: "local-cache",
+  name: "Local Slack Cache",
+  domain: null,
+  isDefault: true,
+};
+const CACHE_CHANNEL = {
+  slackChannelId: "cache-import",
+  name: "cache-import",
+  type: "im" as const,
+  isArchived: false,
+};
 
 /** Upserts cache-parsed messages into a synthetic workspace/channel until
  * Phase 2 (self-mode) resolves real workspace/channel identity for cache
@@ -1293,7 +1428,9 @@ export async function runSync(opts: { source: string; full?: boolean }): Promise
   const parsed = parseCacheRecords(dump.records);
   const summary = syncFromCacheRecords(repo, parsed);
 
-  console.log(`cache sync: ${summary.inserted} messages upserted, ${summary.skipped} records skipped`);
+  console.log(
+    `cache sync: ${summary.inserted} messages upserted, ${summary.skipped} records skipped`,
+  );
 }
 ```
 
@@ -1314,6 +1451,7 @@ git commit -m "feat: wire cache source into sync --source cache CLI command"
 ### Task 10: `search` and `messages` commands
 
 **Files:**
+
 - Create: `src/cli/search.ts`
 - Create: `src/cli/messages.ts`
 
@@ -1353,7 +1491,7 @@ export function runMessages(opts: { channel: string; hours: string }): void {
       `SELECT m.captured_at, m.text FROM messages m
        JOIN channels c ON c.id = m.channel_id
        WHERE c.name = ? AND m.captured_at >= ?
-       ORDER BY m.captured_at ASC`
+       ORDER BY m.captured_at ASC`,
     )
     .all(opts.channel, hoursAgo) as any[];
   if (rows.length === 0) {
@@ -1369,10 +1507,12 @@ export function runMessages(opts: { channel: string; hours: string }): void {
 - [ ] **Step 3: Manual smoke run**
 
 Run:
+
 ```bash
 npx tsx src/cli/index.ts search "the"
 npx tsx src/cli/index.ts messages --channel cache-import --hours 24
 ```
+
 Expected: both print rows from the Task 9 sync run (or "no matches" / "no messages" if the query/channel doesn't hit — not an error either way).
 
 - [ ] **Step 4: Commit**
