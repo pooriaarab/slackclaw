@@ -7,7 +7,11 @@ import { runSearch } from "./search.js";
 import { runMessages } from "./messages.js";
 
 const program = new Command();
-program.name("slackclaw").description("Slack DMs and saved-items scraper. Local archive of your Slack messages claw-able for agents.");
+program
+  .name("slackclaw")
+  .description(
+    "Slack DMs and saved-items scraper. Local archive of your Slack messages claw-able for agents.",
+  );
 
 program.command("init").action(runInit);
 
@@ -22,9 +26,7 @@ program
   .option("--full", "ignore incremental cursor")
   .action((opts) => runSync(opts));
 
-program
-  .command("search <query>")
-  .action((query) => runSearch(query));
+program.command("search <query>").action((query) => runSearch(query));
 
 program
   .command("messages")
