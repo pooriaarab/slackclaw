@@ -21,7 +21,16 @@ describe("schema", () => {
       .prepare("SELECT name FROM sqlite_master WHERE type='table'")
       .all()
       .map((r: any) => r.name);
-    for (const t of ["workspaces", "channels", "users", "messages", "attachments", "mentions", "saved_items", "sync_state"]) {
+    for (const t of [
+      "workspaces",
+      "channels",
+      "users",
+      "messages",
+      "attachments",
+      "mentions",
+      "saved_items",
+      "sync_state",
+    ]) {
       expect(tables).toContain(t);
     }
     db.close();
@@ -30,10 +39,18 @@ describe("schema", () => {
   it("enforces unique (channel_id, slack_ts) on messages", () => {
     const db = openDb(dbPath);
     db.prepare("INSERT INTO workspaces (team_id, name) VALUES ('T1','Test')").run();
-    db.prepare("INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')").run();
-    db.prepare("INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','hi','cache','2026-01-01')").run();
+    db.prepare(
+      "INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')",
+    ).run();
+    db.prepare(
+      "INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','hi','cache','2026-01-01')",
+    ).run();
     expect(() =>
-      db.prepare("INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','dup','cache','2026-01-01')").run()
+      db
+        .prepare(
+          "INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'123.456','dup','cache','2026-01-01')",
+        )
+        .run(),
     ).toThrow();
     db.close();
   });
@@ -41,9 +58,15 @@ describe("schema", () => {
   it("keeps messages_fts in sync via triggers", () => {
     const db = openDb(dbPath);
     db.prepare("INSERT INTO workspaces (team_id, name) VALUES ('T1','Test')").run();
-    db.prepare("INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')").run();
-    db.prepare("INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'1','panic: nil pointer','cache','2026-01-01')").run();
-    const rows = db.prepare("SELECT rowid FROM messages_fts WHERE messages_fts MATCH 'panic'").all();
+    db.prepare(
+      "INSERT INTO channels (workspace_id, slack_channel_id, name, type) VALUES (1,'C1','general','public')",
+    ).run();
+    db.prepare(
+      "INSERT INTO messages (channel_id, slack_ts, text, source, captured_at) VALUES (1,'1','panic: nil pointer','cache','2026-01-01')",
+    ).run();
+    const rows = db
+      .prepare("SELECT rowid FROM messages_fts WHERE messages_fts MATCH 'panic'")
+      .all();
     expect(rows.length).toBe(1);
     db.close();
   });
