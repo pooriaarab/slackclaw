@@ -40,6 +40,7 @@ messages_fts  -- FTS5 virtual table over messages.text, trigger-synced
 ```
 
 Notes:
+
 - No `threads` table — Slack threads are messages with `thread_ts` pointing at the parent; simpler than Discord's separate thread-channel object.
 - `type IN ('im','mpim')` is where DM/group-DM data lands — this is the "DM scraper" surface from the existing README.
 - Schema is multi-workspace-ready from day one (cheap now, expensive to retrofit), even though default UX assumes one workspace.

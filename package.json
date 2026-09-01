@@ -2,10 +2,10 @@
   "name": "slackclaw",
   "version": "0.1.0",
   "description": "Slack DMs and saved-items scraper. Local archive of your Slack messages claw-able for agents.",
-  "type": "module",
   "bin": {
     "slackclaw": "./dist/cli/index.js"
   },
+  "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "test": "vitest run",
