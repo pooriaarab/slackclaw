@@ -25,9 +25,18 @@ describe("syncFromParsedCache", () => {
     channels: [{ slackChannelId: "C1", name: "general", type: "public", isArchived: false }],
     users: [{ slackUserId: "U1", name: "alice", displayName: "Alice", isBot: false }],
     messages: [
-      { channelSlackId: "C1", slackTs: "1.1", threadTs: null, userSlackId: "U1", text: "hello", editedTs: null },
+      {
+        channelSlackId: "C1",
+        slackTs: "1.1",
+        threadTs: null,
+        userSlackId: "U1",
+        text: "hello",
+        editedTs: null,
+      },
     ],
-    savedItems: [{ channelSlackId: "C1", slackTs: "1.1", savedAt: "2026-01-01T00:00:00.000Z", note: "saved" }],
+    savedItems: [
+      { channelSlackId: "C1", slackTs: "1.1", savedAt: "2026-01-01T00:00:00.000Z", note: "saved" },
+    ],
     skipped: 2,
   };
 
@@ -44,7 +53,16 @@ describe("syncFromParsedCache", () => {
     const summary = syncFromParsedCache(repo, {
       ...parsed,
       channels: [],
-      messages: [{ channelSlackId: "D9", slackTs: "2.1", threadTs: null, userSlackId: null, text: "dm", editedTs: null }],
+      messages: [
+        {
+          channelSlackId: "D9",
+          slackTs: "2.1",
+          threadTs: null,
+          userSlackId: null,
+          text: "dm",
+          editedTs: null,
+        },
+      ],
       savedItems: [],
     });
     expect(summary.messages).toBe(1);
