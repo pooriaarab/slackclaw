@@ -9,7 +9,11 @@ describe("paths", () => {
   });
 
   it("respects XDG_CONFIG_HOME on linux", () => {
-    const dir = getConfigDir({ platform: "linux", env: { XDG_CONFIG_HOME: "/home/test/.config" }, home: "/home/test" });
+    const dir = getConfigDir({
+      platform: "linux",
+      env: { XDG_CONFIG_HOME: "/home/test/.config" },
+      home: "/home/test",
+    });
     expect(dir).toBe("/home/test/.config/slackclaw");
   });
 
