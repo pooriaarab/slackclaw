@@ -15,7 +15,7 @@ export function runMessages(opts: { channel: string; hours: string }): void {
       `SELECT m.captured_at, m.text FROM messages m
        JOIN channels c ON c.id = m.channel_id
        WHERE c.name = ? AND m.captured_at >= ?
-       ORDER BY m.captured_at ASC`
+       ORDER BY m.captured_at ASC`,
     )
     .all(opts.channel, hoursAgo) as MessageListRow[];
   if (rows.length === 0) {

@@ -62,12 +62,15 @@ describe("dumpCache (synthetic)", () => {
 describe("dumpCache (integration, real machine)", () => {
   const blobDir = locateSlackCacheDir();
 
-  it.skipIf(!blobDir)("decodes at least one real state with messages/channels/members from the local Slack Desktop cache", () => {
-    const result = dumpCache(blobDir!);
-    expect(result.states.length).toBeGreaterThan(0);
-    const hasRealContent = result.states.some(
-      (s) => s.value.channels || s.value.messages || s.value.members
-    );
-    expect(hasRealContent).toBe(true);
-  });
+  it.skipIf(!blobDir)(
+    "decodes at least one real state with messages/channels/members from the local Slack Desktop cache",
+    () => {
+      const result = dumpCache(blobDir!);
+      expect(result.states.length).toBeGreaterThan(0);
+      const hasRealContent = result.states.some(
+        (s) => s.value.channels || s.value.messages || s.value.members,
+      );
+      expect(hasRealContent).toBe(true);
+    },
+  );
 });
