@@ -3,3 +3,6 @@ dist/
 *.db
 *.db-journal
 .slackclaw/
+# Cursor cloud — local secrets stay local
+.env.local
+.env.*.local
